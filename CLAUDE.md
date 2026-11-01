@@ -1,5 +1,7 @@
 # Salon platform v0
 
+**New chat? Read `docs/HANDOFF.md` first** (history, current state, next steps). Full spec: `docs/BRIEF.md`.
+
 Booking platform for a 3-branch salon: `apps/web` (public site) and `apps/staff` (private PWA), sharing `packages/db` (Prisma/Neon) and `packages/booking` (pure TS engine). Spec: the original build brief; decisions in `docs/DECISIONS.md`.
 
 ## Stack
