@@ -1,0 +1,40 @@
+{
+  "name": "@salon/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hours": "./src/hours.ts",
+    "./password": "./src/password.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "seed": "tsx src/seed.ts",
+    "create-staff": "tsx src/create-staff.ts",
+    "studio": "prisma studio",
+    "lint": "echo \"lint: n/a yet\"",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/adapter-neon": "7.10.1",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "pg": "8.16.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@salon/config": "workspace:*",
+    "@types/node": "22.15.0",
+    "@types/pg": "8.15.0",
+    "dotenv": "17.2.0",
+    "prisma": "7.10.1",
+    "tsx": "4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

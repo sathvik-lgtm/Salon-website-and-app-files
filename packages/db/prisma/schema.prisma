@@ -1,0 +1,304 @@
+// Salon platform v0 schema. Money = integer paise (INR). All instants are UTC.
+// The no-double-booking EXCLUDE constraint lives in a raw SQL migration (see prisma/migrations/*_overlap_constraint).
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/generated"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  BRANCH_MANAGER
+  RECEPTIONIST
+  STYLIST
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentSource {
+  ONLINE
+  WALK_IN
+  PHONE
+}
+
+enum StylistPreference {
+  SPECIFIC
+  ANY_AVAILABLE
+}
+
+enum BillingPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model Branch {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  name      String
+  address   String
+  city      String
+  phone     String
+  timezone  String  @default("Asia/Kolkata")
+  /// Validated by branchHoursSchema in src/hours.ts
+  hours     Json
+  latitude  Float?
+  longitude Float?
+  mapUrl    String?
+  imageUrl  String?
+  active    Boolean @default(true)
+
+  staff         Staff[]
+  services      BranchService[]
+  appointments  Appointment[]
+  promotions    Promotion[]
+  reviewCache   ReviewCache[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  sortOrder Int       @default(0)
+  services  Service[]
+}
+
+model Service {
+  id              String  @id @default(cuid())
+  categoryId      String
+  slug            String  @unique
+  name            String
+  description     String?
+  basePricePaise  Int
+  baseDurationMin Int
+  active          Boolean @default(true)
+  featured        Boolean @default(false)
+  sortOrder       Int     @default(0)
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  branches BranchService[]
+  staff    StaffService[]
+  items    AppointmentItem[]
+
+  @@index([categoryId])
+}
+
+/// Per-branch availability and overrides. A service is offered at a branch only if a row exists with available = true.
+model BranchService {
+  branchId    String
+  serviceId   String
+  available   Boolean @default(true)
+  pricePaise  Int?
+  durationMin Int?
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@id([branchId, serviceId])
+}
+
+model Staff {
+  id                 String   @id @default(cuid())
+  name               String
+  /// Login identifier only; no email is ever sent.
+  email              String   @unique
+  passwordHash       String
+  mustChangePassword Boolean  @default(false)
+  role               Role
+  /// A stylist belongs to exactly one branch. OWNER still has a home branch for display.
+  homeBranchId       String
+  active             Boolean  @default(true)
+  /// Reserved for TOTP 2FA (not used in v0).
+  totpSecret         String?
+  bookable           Boolean  @default(false)
+  imageUrl           String?
+
+  homeBranch   Branch          @relation(fields: [homeBranchId], references: [id])
+  services     StaffService[]
+  schedules    StaffSchedule[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+  auditLogs    AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([homeBranchId])
+}
+
+/// Which services a stylist is qualified to perform.
+model StaffService {
+  staffId   String
+  serviceId String
+
+  staff   Staff   @relation(fields: [staffId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@id([staffId, serviceId])
+}
+
+/// Weekly working window in branch-local time. weekday: ISO 1 (Mon) to 7 (Sun). Minutes since local midnight.
+/// Multiple rows per weekday allowed (e.g. split shifts).
+model StaffSchedule {
+  id          String @id @default(cuid())
+  staffId     String
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId, weekday])
+}
+
+model TimeOff {
+  id      String   @id @default(cuid())
+  staffId String
+  startAt DateTime @db.Timestamptz(3)
+  endAt   DateTime @db.Timestamptz(3)
+  reason  String?
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId, startAt, endAt])
+}
+
+model Customer {
+  id    String @id @default(cuid())
+  name  String
+  /// E.164
+  phone String @unique
+  /// NEEDS REVIEW: must not be read or shown anywhere in v0.
+  notes String?
+  /// Stays false in v0.
+  whatsappOptIn Boolean   @default(false)
+  consentAt     DateTime?
+
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  branchId          String
+  staffId           String
+  customerId        String
+  startAt           DateTime @db.Timestamptz(3)
+  endAt             DateTime @db.Timestamptz(3)
+  status            AppointmentStatus @default(CONFIRMED)
+  source            AppointmentSource
+  stylistPreference StylistPreference
+  totalPricePaise   Int
+  totalDurationMin  Int
+  /// Hash of a random token for a future manage page. No manage page in v0.
+  manageTokenHash   String
+
+  branch   Branch            @relation(fields: [branchId], references: [id])
+  staff    Staff             @relation(fields: [staffId], references: [id])
+  customer Customer          @relation(fields: [customerId], references: [id])
+  items    AppointmentItem[]
+  audit    AuditLog[]
+  notifications NotificationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([staffId, startAt])
+  @@index([branchId, startAt])
+  @@index([customerId, startAt])
+}
+
+/// Price and duration snapshotted at booking time.
+model AppointmentItem {
+  id            String @id @default(cuid())
+  appointmentId String
+  serviceId     String
+  serviceName   String
+  pricePaise    Int
+  durationMin   Int
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service     @relation(fields: [serviceId], references: [id])
+
+  @@index([appointmentId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorId       String
+  appointmentId String?
+  action        String
+  /// e.g. { from: "CONFIRMED", to: "CANCELLED" }. Must not contain PII.
+  detail        Json?
+  createdAt     DateTime @default(now())
+
+  actor       Staff        @relation(fields: [actorId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId])
+  @@index([actorId, createdAt])
+}
+
+model Promotion {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  /// null = all branches
+  branchId    String?
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  active      Boolean   @default(true)
+  imageUrl    String?
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  @@index([active, startsAt, endsAt])
+}
+
+model MembershipPlan {
+  id           String        @id @default(cuid())
+  name         String
+  pricePaise   Int
+  period       BillingPeriod
+  perks        String[]
+  active       Boolean       @default(true)
+  sortOrder    Int           @default(0)
+}
+
+// ---- Present in schema, unused in v0 ----
+
+model NotificationLog {
+  id            String   @id @default(cuid())
+  appointmentId String?
+  channel       String
+  status        String
+  createdAt     DateTime @default(now())
+
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+}
+
+model ReviewCache {
+  id        String   @id @default(cuid())
+  branchId  String
+  payload   Json
+  fetchedAt DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+}

@@ -7,7 +7,7 @@ pnpm workspaces + Turborepo · Next.js App Router (TS strict) · Tailwind v4 (to
 
 ## Commands
 - `pnpm dev` / `build` / `lint` / `typecheck` / `test` (all via turbo)
-- `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:create-staff` (once `packages/db` exists)
+- `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:create-staff` — start Postgres first with `docker compose up -d`; copy `packages/db/.env.example` to `.env`
 - `pnpm --filter @salon/<app> cf:build` — OpenNext build. **Needs Linux/CI or Windows Developer Mode** (symlink EPERM otherwise).
 
 ## Rules
