@@ -31,7 +31,7 @@ Decisions so far: `docs/DECISIONS.md`. Rules/commands: `CLAUDE.md`.
 
 ## Next: M2 — booking engine (`packages/booking`), then STOP for review
 Pure TypeScript, no HTTP, DB injected through a small port interface. Per brief section 5:
-1. Single config file with defaults: slot granularity 30 min, buffer 0, min notice 120 min, window 60 days, max 3 upcoming confirmed bookings per phone.
+1. Single config file (`packages/booking/src/config.ts`). Owner-set values (not the brief defaults): slot grid 15 min, buffer 0, min notice 60 min, window 7 days, max 2 upcoming online bookings per phone. (Done.)
 2. `getAvailableSlots({ branchId, serviceIds, date, stylistId | 'ANY' })` returning branch-local start times (Luxon for time zones).
 3. `createAppointment(...)`: one transaction; relies on the exclusion constraint; SQLSTATE `23P01` returns a typed "slot taken" result; for `ANY`, retry with the next-best stylist; recompute price/duration/end on the server; snapshot onto `AppointmentItem`; status `CONFIRMED`; random `manageTokenHash`.
 4. Multi-service = one continuous block, one stylist qualified for all services (`StaffService`); branch overrides from `BranchService`.

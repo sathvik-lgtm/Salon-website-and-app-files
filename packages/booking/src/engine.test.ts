@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createAppointment } from './create';
 import { getAvailableSlots } from './slots';
 import { createMemoryPort, type MemData } from './test-support/memory-port';
+import { RULES } from './test-support/rules';
 import { H, allWeekHours, makeWorld, weekly } from './test-support/world';
 import type { CreateInput, EngineOptions, SlotsResult } from './types';
 
@@ -9,7 +10,7 @@ import type { CreateInput, EngineOptions, SlotsResult } from './types';
 const DATE = '2026-11-09';
 const ist = (date: string, hhmm: string) => new Date(`${date}T${hhmm}:00+05:30`);
 const NOW = ist('2026-11-08', '09:00');
-const opts: EngineOptions = { now: NOW };
+const opts: EngineOptions = { now: NOW, config: RULES };
 
 const PHONE = '+919876543210';
 
@@ -205,7 +206,10 @@ describe('getAvailableSlots', () => {
   it('keeps the configured buffer between appointments', async () => {
     const w = solo();
     book(w, 's1', '10:00', '11:00');
-    const t = await times(w, ['cut'], 'ANY', DATE, { now: NOW, config: { bufferMin: 30 } });
+    const t = await times(w, ['cut'], 'ANY', DATE, {
+      now: NOW,
+      config: { ...RULES, bufferMin: 30 },
+    });
     expect(t).not.toContain('11:00'); // no gap
     expect(t[0]).toBe('11:30');
   });
@@ -236,14 +240,14 @@ describe('getAvailableSlots', () => {
   describe('minimum notice and booking window', () => {
     it('minimum notice: the first slot is exactly now + 120 min, not earlier', async () => {
       const w = solo();
-      const at = (hhmm: string) => ({ now: ist(DATE, hhmm) });
+      const at = (hhmm: string) => ({ config: RULES, now: ist(DATE, hhmm) });
       expect((await times(w, ['cut'], 'ANY', DATE, at('08:00')))[0]).toBe('10:00'); // exactly 120 min
       expect((await times(w, ['cut'], 'ANY', DATE, at('08:01')))[0]).toBe('10:30'); // 119 min to 10:00
     });
 
     it('window: today and the 60th day ahead are bookable, the 61st is not', async () => {
       const w = solo();
-      const o = { now: ist('2026-11-02', '09:00') };
+      const o = { config: RULES, now: ist('2026-11-02', '09:00') };
       expect((await times(w, ['cut'], 'ANY', '2026-11-02', o)).length).toBeGreaterThan(0);
       expect((await times(w, ['cut'], 'ANY', '2027-01-01', o)).length).toBeGreaterThan(0); // +60 days
       expect(await slotsFor(w, ['cut'], 'ANY', '2027-01-02', o)).toEqual({
@@ -261,7 +265,7 @@ describe('getAvailableSlots', () => {
     it('"today" is the branch-local date, not the UTC date', async () => {
       const w = solo();
       // 19:00 UTC on 9 Nov is 00:30 on 10 Nov in Kolkata.
-      const o = { now: new Date('2026-11-09T19:00:00Z') };
+      const o = { config: RULES, now: new Date('2026-11-09T19:00:00Z') };
       expect(await slotsFor(w, ['cut'], 'ANY', '2026-11-09', o)).toEqual({
         ok: false,
         reason: 'OUTSIDE_BOOKING_WINDOW',
@@ -272,7 +276,7 @@ describe('getAvailableSlots', () => {
     it('a local date can start on the previous UTC date (Auckland, UTC+13)', async () => {
       const w = solo();
       w.branches[0]!.timezone = 'Pacific/Auckland';
-      const o = { now: new Date('2026-11-01T00:00:00Z') };
+      const o = { config: RULES, now: new Date('2026-11-01T00:00:00Z') };
       const r = await slotsFor(w, ['cut'], 'ANY', '2026-11-10', o);
       if (!r.ok) throw new Error(r.reason);
       expect(r.slots[0]?.time).toBe('10:00');
@@ -294,7 +298,7 @@ describe('getAvailableSlots', () => {
     it('uses the right UTC offset on the day clocks change (New York, 1 Nov 2026)', async () => {
       const w = solo();
       w.branches[0]!.timezone = 'America/New_York';
-      const o = { now: new Date('2026-10-20T00:00:00Z') };
+      const o = { config: RULES, now: new Date('2026-10-20T00:00:00Z') };
       const before = await slotsFor(w, ['cut'], 'ANY', '2026-10-31', o); // EDT, UTC-4
       const after = await slotsFor(w, ['cut'], 'ANY', '2026-11-01', o); // EST, UTC-5
       if (!before.ok || !after.ok) throw new Error('expected slots');
@@ -404,12 +408,15 @@ describe('createAppointment', () => {
         reason: 'SLOT_UNAVAILABLE',
       },
     );
-    expect(await createAppointment(port, baseInput(), { now: ist(DATE, '08:01') })).toEqual({
+    expect(
+      await createAppointment(port, baseInput(), { config: RULES, now: ist(DATE, '08:01') }),
+    ).toEqual({
       ok: false,
       reason: 'TOO_SOON',
     });
     expect(
       await createAppointment(port, baseInput({ startAt: ist('2027-01-02', '10:00') }), {
+        config: RULES,
         now: ist('2026-11-02', '09:00'),
       }),
     ).toEqual({ ok: false, reason: 'OUTSIDE_BOOKING_WINDOW' });
@@ -421,7 +428,7 @@ describe('createAppointment', () => {
     const walkIn = await createAppointment(
       port,
       baseInput({ source: 'WALK_IN', startAt: ist(DATE, '10:15') }),
-      { now: ist(DATE, '10:15') }, // right now: no notice
+      { config: RULES, now: ist(DATE, '10:15') }, // right now: no notice
     );
     expect(walkIn.ok).toBe(true);
     const clash = await createAppointment(
@@ -431,7 +438,7 @@ describe('createAppointment', () => {
         startAt: ist(DATE, '10:30'),
         customer: { name: 'B', phone: '+919812345678' },
       }),
-      { now: ist(DATE, '10:15') },
+      { config: RULES, now: ist(DATE, '10:15') },
     );
     expect(clash).toEqual({ ok: false, reason: 'SLOT_TAKEN' });
   });
@@ -563,6 +570,7 @@ describe('createAppointment', () => {
           customer: { name: 'P', phone: PHONE },
         }),
         {
+          config: RULES,
           now: ist(DATE, '12:30'),
         },
       );

@@ -1,6 +1,7 @@
 /**
- * Tunable booking rules. These are the defaults agreed in the brief (still to be confirmed with the
- * owners). Change a number here and nothing else needs to move.
+ * Tunable booking rules. Change a number here and nothing else needs to move.
+ * Values set by the owner on 2026-11-01 (the brief's defaults were 30 min grid, 120 min notice,
+ * 60-day window, 3 per phone).
  */
 export interface BookingConfig {
   /** Online slot start times are multiples of this many minutes after branch-local midnight. */
@@ -16,11 +17,11 @@ export interface BookingConfig {
 }
 
 export const bookingConfig: BookingConfig = {
-  slotGranularityMin: 30,
+  slotGranularityMin: 15,
   bufferMin: 0,
-  minNoticeMin: 120,
-  windowDays: 60,
-  maxUpcomingPerPhone: 3,
+  minNoticeMin: 60,
+  windowDays: 7,
+  maxUpcomingPerPhone: 2,
 };
 
 /** Defaults overlaid with per-call overrides (tests use this; apps normally pass nothing). */

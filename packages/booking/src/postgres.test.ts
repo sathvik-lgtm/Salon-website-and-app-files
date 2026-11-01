@@ -10,6 +10,7 @@ import { createAppointment } from './create';
 import { createPrismaPort, isLostRaceError } from './prisma-port';
 import { getAvailableSlots } from './slots';
 import { testDatabaseUrl } from './test-support/db-env';
+import { RULES } from './test-support/rules';
 import { H, allWeekHours } from './test-support/world';
 import type { BookingPort, CreateInput } from './types';
 
@@ -37,7 +38,7 @@ function withBarrier(inner: BookingPort, parties: number): BookingPort {
 
 const DATE = '2026-11-09'; // a Monday
 const ist = (hhmm: string, date = DATE) => new Date(`${date}T${hhmm}:00+05:30`);
-const opts = { now: new Date('2026-11-08T03:30:00Z') };
+const opts = { now: new Date('2026-11-08T03:30:00Z'), config: RULES };
 
 describe.skipIf(!url)('booking engine on real Postgres', () => {
   let db: Db;
