@@ -1,0 +1,29 @@
+{
+  "name": "@salon/booking",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./prisma": "./src/prisma-port.ts"
+  },
+  "scripts": {
+    "lint": "echo \"lint: n/a yet\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@salon/db": "workspace:*",
+    "libphonenumber-js": "1.13.15",
+    "luxon": "3.7.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@salon/config": "workspace:*",
+    "@types/luxon": "3.7.6",
+    "@types/node": "22.15.0",
+    "dotenv": "17.2.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

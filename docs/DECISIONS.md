@@ -20,3 +20,15 @@
 - Docker CLI is not on PATH in some shells: `C:\Users\elect\AppData\Local\Programs\DockerDesktop\resources\bin`.
 - Staff app is served at `<domain>/admin` (option A): separate Worker with Next `basePath: '/admin'`, reached via a Cloudflare route `domain/admin*`; the website Worker serves everything else. Keeps a separate 3 MiB budget per Worker. Tradeoff vs a subdomain: same origin as the public site, so rely on strict CSP + short sessions + session cookie `Path=/admin`.
 - Customers have no accounts or login anywhere; staff accounts only via CLI/OWNER/manager.
+- Booking engine (`packages/booking`): core is pure TS behind a `BookingPort`; the Prisma implementation is a separate entry point (`@salon/booking/prisma`). Unit tests use an in-memory port; a second suite runs against real Postgres.
+- Online slot starts are multiples of 30 min from branch-local midnight (not from opening time), so a 10:15 shift start first offers 10:30.
+- Booking window is by branch-local calendar date: today through today + 60 days inclusive (not "now + 60×24 h").
+- Buffer is a minimum gap between a stylist's appointments, enforced in app code. `endAt` and `totalDurationMin` are the services only (what the customer is shown); the DB constraint sees raw intervals, so with buffer > 0 a simultaneous race could in theory leave a gap below the buffer. Default is 0.
+- "Upcoming bookings per phone" counts PENDING + CONFIRMED appointments starting after now; applies to ONLINE only.
+- Staff bookings (WALK_IN, PHONE) skip the public rules (slot grid, min notice, window, per-phone cap, no "past" check) so a walk-in can start right now at any minute. They still need opening hours, the stylist's shift, no time off and no overlap.
+- Each create attempt is its own transaction: Postgres aborts a transaction after a failed statement, so the `ANY` retry (next-best stylist) needs a fresh one.
+- Customer upsert never overwrites an existing name (public bookings must not rename someone else's record) and selects only `id` (`Customer.notes` is never read). The upsert touches `updatedAt` on purpose: the row lock serialises concurrent bookings by one phone so the cap cannot be beaten (verified by a test that fails without it).
+- Lost races are `23P01` (exclusion violation) and also `40P01`/Prisma `P2034` (deadlock victim among overlapping inserts); all map to "slot taken". A per-stylist `pg_advisory_xact_lock` before the insert queues contenders so the loser gets an immediate 23P01 instead of waiting out `deadlock_timeout` (1 s). The exclusion constraint remains the final arbiter.
+- `manageTokenHash` is the SHA-256 of a random 256-bit token; the token is discarded (v0 has no manage page).
+- Phones: `libphonenumber-js/min` metadata (smaller Worker bundle), default country IN, stored as E.164.
+- Postgres integration tests refuse any non-localhost database and create/delete their own uniquely named rows, so they are safe on the dev DB. In CI a missing `DATABASE_URL` is an error, so they can never be skipped silently.

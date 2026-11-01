@@ -19,6 +19,8 @@ Decisions so far: `docs/DECISIONS.md`. Rules/commands: `CLAUDE.md`.
 - **M1 Database** (pushed): `packages/db` with Prisma 7.10.1 schema, migration incl. `btree_gist` + `Appointment_no_staff_overlap` exclusion constraint (verified by hand in Postgres), `branchHoursSchema` (Zod), PBKDF2 password hashing, `createDb()` (neon/pg adapters), seed (placeholder data; OWNER from `SEED_OWNER_*` env), `create-staff` CLI. 5 unit tests pass.
 - **Routing decision**: staff app is served at `<domain>/admin` (Next `basePath: '/admin'`, separate Worker, Cloudflare route `domain/admin*`). Customers have no accounts/login anywhere.
 
+- **M2 Booking engine** (`packages/booking`; **awaiting owner review, do not start M3 until they say go**): pure engine behind a `BookingPort` + Prisma port. 50 tests: 40 on an in-memory port (every case in brief section 5) and 10 on real Postgres, incl. two-simultaneous-creates-one-success (made deterministic with a barrier), 10-way race, `ANY` race, phone-cap race. Verified by mutation: tests fail if the `23P01` mapping, the busy check, the row lock or the DB constraint itself is removed. CI `check` job now has a Postgres 17 service + `pnpm db:migrate`. Decisions at the end of `docs/DECISIONS.md`.
+
 ## Current state / environment
 - Docker Desktop installed; engine works. The CLI is not on PATH in every shell. Add it: `C:\Users\elect\AppData\Local\Programs\DockerDesktop\resources\bin`. Postgres via `docker compose up -d` (host port **5433**, user/db `salon`). `packages/db/.env` exists locally (gitignored); copy from `.env.example`.
 - DB is migrated and seeded locally.

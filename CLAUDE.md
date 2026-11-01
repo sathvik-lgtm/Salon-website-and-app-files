@@ -13,7 +13,8 @@ pnpm workspaces + Turborepo · Next.js App Router (TS strict) · Tailwind v4 (to
 - `pnpm --filter @salon/<app> cf:build` — OpenNext build. **Needs Linux/CI or Windows Developer Mode** (symlink EPERM otherwise).
 
 ## Rules
-- ALL booking/availability logic lives in `packages/booking`. Apps never reimplement it; apps never call each other.
+- ALL booking/availability logic lives in `packages/booking`. Apps never reimplement it; apps never call each other. Apps call `getAvailableSlots` / `createAppointment` with `createPrismaPort(db)` (from `@salon/booking/prisma`); tunable rules are in `packages/booking/src/config.ts`. Both return typed `{ ok: false, reason }` results, never throw for expected cases.
+- Booking tests: `engine.test.ts` (in-memory port) and `postgres.test.ts` (real Postgres; needs `docker compose up -d`, skipped locally if no `DATABASE_URL`, mandatory in CI, localhost only).
 - Money = integer paise (INR). Instants stored UTC; branch hours/schedules interpreted in the branch `timezone` (default Asia/Kolkata).
 - No double-booking: enforced by a Postgres `EXCLUDE USING gist` constraint (all statuses except CANCELLED, NO_SHOW); SQLSTATE `23P01` = slot taken.
 - Migrations run only from `packages/db`, never on app start.
