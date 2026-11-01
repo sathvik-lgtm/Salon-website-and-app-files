@@ -17,9 +17,9 @@ export interface BookingConfig {
 }
 
 export const bookingConfig: BookingConfig = {
-  slotGranularityMin: 15,
+  slotGranularityMin: 5,
   bufferMin: 0,
-  minNoticeMin: 30,
+  minNoticeMin: 20,
   windowDays: 7,
   maxUpcomingPerPhone: 2,
 };
