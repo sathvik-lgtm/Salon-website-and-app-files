@@ -52,7 +52,7 @@ describe('default booking rules', () => {
     expect(bookingConfig).toEqual({
       slotGranularityMin: 15,
       bufferMin: 0,
-      minNoticeMin: 60,
+      minNoticeMin: 30,
       windowDays: 7,
       maxUpcomingPerPhone: 2,
     });
@@ -76,17 +76,17 @@ describe('default booking rules', () => {
     });
   });
 
-  it('needs 60 minutes notice: exactly one hour is fine, a minute less is not', async () => {
+  it('needs 30 minutes notice: exactly half an hour is fine, a minute less is not', async () => {
     const w = solo();
-    expect((await slots(w, DATE, ist(DATE, '09:00')))[0]).toBe('10:00');
-    expect((await slots(w, DATE, ist(DATE, '09:01')))[0]).toBe('10:15');
+    expect((await slots(w, DATE, ist(DATE, '09:30')))[0]).toBe('10:00');
+    expect((await slots(w, DATE, ist(DATE, '09:31')))[0]).toBe('10:15');
 
     const port = createMemoryPort(w);
-    expect(await book(port, '10:00', '+919876543210', ist(DATE, '09:01'))).toEqual({
+    expect(await book(port, '10:00', '+919876543210', ist(DATE, '09:31'))).toEqual({
       ok: false,
       reason: 'TOO_SOON',
     });
-    expect((await book(port, '10:00', '+919876543210', ist(DATE, '09:00'))).ok).toBe(true);
+    expect((await book(port, '10:00', '+919876543210', ist(DATE, '09:30'))).ok).toBe(true);
   });
 
   it('allows bookings today through 7 days ahead, and no further', async () => {
