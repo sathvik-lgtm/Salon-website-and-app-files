@@ -1,0 +1,41 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  # Verifies each app fits the Workers Free plan (3 MiB gzipped) using a real OpenNext build.
+  cloudflare-size:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [web, staff]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: OpenNext build
+        run: pnpm --filter @salon/${{ matrix.app }} cf:build
+      - name: Wrangler dry-run (reports gzip size)
+        working-directory: apps/${{ matrix.app }}
+        run: npx wrangler deploy --dry-run --outdir .wrangler/dry

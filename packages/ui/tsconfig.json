@@ -1,0 +1,4 @@
+{
+  "extends": "@salon/config/tsconfig.next.json",
+  "include": ["src"]
+}

@@ -1,0 +1,17 @@
+/* Shared brand tokens (Tailwind v4 CSS-first). Import after `@import "tailwindcss";`.
+   One accent colour, neutral base. Fonts are self-hosted via next/font in each app (max 2 families). */
+@theme {
+  --color-bg: #fbfaf8;
+  --color-surface: #ffffff;
+  --color-ink: #1c1917;
+  --color-muted: #57534e;
+  --color-line: #e7e5e4;
+  --color-accent: #9f3b4f;
+  --color-accent-ink: #ffffff;
+  --color-focus: #1d4ed8;
+
+  --font-display: var(--font-display-family), Georgia, serif;
+  --font-sans: var(--font-sans-family), system-ui, sans-serif;
+
+  --radius-card: 0.75rem;
+}

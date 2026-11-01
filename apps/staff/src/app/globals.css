@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import '@salon/config/theme.css';
+@source '../../../../packages/ui/src';
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
