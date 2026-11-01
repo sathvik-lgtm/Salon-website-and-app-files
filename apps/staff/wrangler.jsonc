@@ -4,7 +4,12 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // Sign-in lockout and rate-limit counters. The same KV namespace as the website's (the counter keys
+  // cannot clash): put the id that `wrangler kv namespace create RATE_LIMIT` printed in both files.
+  // Secrets (set with `wrangler secret put`): DATABASE_URL (Neon pooled string), AUTH_SECRET
+  // (`openssl rand -base64 32`), TURNSTILE_SECRET_KEY. Variable: AUTH_URL = https://<domain>/admin/api/auth.
+  "kv_namespaces": [{ "binding": "RATE_LIMIT", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }]
   // Production route (add once the domain is on Cloudflare; replace example.com):
   // "routes": [{ "pattern": "example.com/admin*", "zone_name": "example.com" }]
 }

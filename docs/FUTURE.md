@@ -15,3 +15,10 @@
 - Turnstile: also check the returned hostname (and bind an action) once the real domain exists.
 - Rate limits: move counters to a Durable Object if KV's eventual consistency proves too loose.
 - Online change/cancel for customers (needs a safe way to prove who they are; the schema already stores a manage-token hash).
+- Staff app: TOTP two-factor sign-in for OWNER and BRANCH_MANAGER (the brief's stretch goal; the sign-in flow is structured so it can be added without a rewrite, and `Staff.totpSecret` already exists).
+- Staff app: create, edit and deactivate staff from the screen (today: the `db:create-staff` CLI, Prisma Studio, and the Team screen only resets passwords); edit stylists' services, schedules and time off.
+- Staff app: reschedule a booking (move to another time or stylist, with an audit entry); let a stylist complete their own appointments; allow reopening a cancelled booking.
+- Staff app: real session revocation (a `passwordChangedAt` column checked against the session's issue time) so a password reset ends old sessions immediately.
+- Staff app: read-only offline copy of today's schedule with an "offline" banner (the brief's PWA stretch goal; needs a service worker).
+- Staff app: when the real deploy exists, verify Auth.js on Workers (cookie, `AUTH_SECRET` from secrets, `AUTH_URL`), PBKDF2's CPU time per sign-in, and that the 4.6 MiB gzipped Worker starts within 1 second.
+- Shared formatting: extract the date and money helpers duplicated between the website and the staff app into one package if they start to drift.

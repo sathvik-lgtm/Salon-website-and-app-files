@@ -10,6 +10,9 @@ import { createDb, Role } from './index';
 import { generateTempPassword, hashPassword } from './password';
 
 const { values } = parseArgs({
+  // pnpm passes a literal `--` through to the script (`pnpm db:create-staff -- --email ...`), which would
+  // otherwise make every option after it count as a plain word. Drop it so both ways of typing work.
+  args: process.argv.slice(2).filter((arg) => arg !== '--'),
   options: {
     email: { type: 'string' },
     name: { type: 'string' },
@@ -34,7 +37,9 @@ async function main() {
   } else {
     const role = values.role as keyof typeof Role | undefined;
     if (!values.name || !role || !(role in Role) || !values.branch) {
-      throw new Error('--name, --role (OWNER|BRANCH_MANAGER|RECEPTIONIST|STYLIST) and --branch are required');
+      throw new Error(
+        '--name, --role (OWNER|BRANCH_MANAGER|RECEPTIONIST|STYLIST) and --branch are required',
+      );
     }
     const branch = await db.branch.findUnique({ where: { slug: values.branch } });
     if (!branch) throw new Error(`No branch with slug "${values.branch}"`);

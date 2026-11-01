@@ -6,7 +6,8 @@
   "exports": {
     "./rate-limit": "./src/rate-limit.ts",
     "./turnstile": "./src/turnstile.ts",
-    "./request": "./src/request.ts"
+    "./request": "./src/request.ts",
+    "./env": "./src/env.ts"
   },
   "scripts": {
     "lint": "echo \"lint: n/a yet\"",
@@ -18,5 +19,8 @@
     "@types/node": "22.15.0",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@opennextjs/cloudflare": "1.20.15"
   }
 }

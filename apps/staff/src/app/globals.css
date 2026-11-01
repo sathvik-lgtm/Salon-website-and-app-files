@@ -1,9 +1,39 @@
+/* Same brand tokens and fonts as the public website, so it feels like the same brand. */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
 @import '@salon/config/theme.css';
 @source '../../../../packages/ui/src';
+
+:root {
+  --font-display-family: 'Fraunces Variable';
+  --font-sans-family: 'Inter Variable';
+}
 
 body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* A booking that has just appeared: a soft ring that fades, and only for people who allow motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .just-arrived {
+    animation: just-arrived 6s ease-out both;
+  }
+  @keyframes just-arrived {
+    0%,
+    60% {
+      box-shadow: 0 0 0 3px var(--color-accent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
 }

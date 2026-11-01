@@ -9,7 +9,8 @@ on:
 # (same major version as docker-compose.yml) that is migrated and seeded with placeholder data.
 # SEED_OWNER_* are throwaway values for that disposable database, not real credentials.
 # The Turnstile keys are Cloudflare's published DUMMY test keys (they always pass), so they are not secrets.
-# The `check` job also runs the browser tests (Playwright): they book through the real website.
+# The `check` job also runs the browser tests (Playwright): they book through the real website and
+# then work in the staff app. AUTH_SECRET is a throwaway for the disposable CI database.
 
 jobs:
   check:
@@ -35,6 +36,8 @@ jobs:
       SEED_OWNER_PASSWORD: ci-only-throwaway-password
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
       TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      AUTH_URL: http://localhost:3001/admin/api/auth
+      AUTH_SECRET: ci-only-throwaway-secret-not-used-anywhere-else
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,8 +55,10 @@ jobs:
       - run: pnpm build
       - name: Install the browser for the end-to-end tests
         run: pnpm --filter @salon/web exec playwright install --with-deps chromium
-      - name: End-to-end tests (real browser, real booking flow)
+      - name: End-to-end tests: website (real browser, real booking flow)
         run: pnpm --filter @salon/web e2e
+      - name: End-to-end tests: staff app (book on the website, see it in the staff app, roles, sign-in)
+        run: pnpm --filter @salon/staff e2e
       - name: Keep the browser-test report if something failed
         if: failure()
         uses: actions/upload-artifact@v4
@@ -62,6 +67,8 @@ jobs:
           path: |
             apps/web/playwright-report
             apps/web/test-results
+            apps/staff/playwright-report
+            apps/staff/test-results
           retention-days: 7
 
   # Verifies each app fits the Workers Free plan (3 MiB gzipped) using a real OpenNext build.

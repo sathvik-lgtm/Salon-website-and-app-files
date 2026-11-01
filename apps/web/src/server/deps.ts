@@ -3,7 +3,7 @@ import { createAppointment, getAvailableSlots, listStylists, normalizePhone } fr
 import { createPrismaPort } from '@salon/booking/prisma';
 import { createDb, type Db } from '@salon/db';
 import type { ApiDeps } from './booking-api';
-import { getEnv, getKv } from './env';
+import { getEnv, getKv } from '@salon/security/env';
 import { createKvStore, createMemoryStore, createRateLimiter } from '@salon/security/rate-limit';
 import { verifyTurnstile } from '@salon/security/turnstile';
 
