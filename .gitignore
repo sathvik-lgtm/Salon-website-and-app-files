@@ -11,4 +11,4 @@ dist
 .DS_Store
 playwright-report
 test-results
-src/generated
+**/src/generated
