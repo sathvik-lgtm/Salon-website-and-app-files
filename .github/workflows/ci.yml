@@ -55,9 +55,9 @@ jobs:
       - run: pnpm build
       - name: Install the browser for the end-to-end tests
         run: pnpm --filter @salon/web exec playwright install --with-deps chromium
-      - name: End-to-end tests: website (real browser, real booking flow)
+      - name: End-to-end tests - website (real browser, real booking flow)
         run: pnpm --filter @salon/web e2e
-      - name: End-to-end tests: staff app (book on the website, see it in the staff app, roles, sign-in)
+      - name: End-to-end tests - staff app (book on the website, see it in the staff app, roles, sign-in)
         run: pnpm --filter @salon/staff e2e
       - name: Keep the browser-test report if something failed
         if: failure()
