@@ -4,8 +4,8 @@ import { createPrismaPort } from '@salon/booking/prisma';
 import { createDb, type Db } from '@salon/db';
 import type { ApiDeps } from './booking-api';
 import { getEnv, getKv } from './env';
-import { createKvStore, createMemoryStore, createRateLimiter } from './rate-limit';
-import { verifyTurnstile } from './turnstile';
+import { createKvStore, createMemoryStore, createRateLimiter } from '@salon/security/rate-limit';
+import { verifyTurnstile } from '@salon/security/turnstile';
 
 // Used when there is no KV binding (local dev). Lives for the life of the server process.
 const memoryStore = createMemoryStore();

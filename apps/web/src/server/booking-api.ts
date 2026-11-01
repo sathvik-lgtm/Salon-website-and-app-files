@@ -7,9 +7,9 @@ import type {
   StylistsResult,
 } from '@salon/booking';
 import { z } from 'zod';
-import { hashId, type RateLimiter } from './rate-limit';
-import { clientIp, isSameOrigin } from './request';
-import type { TurnstileResult } from './turnstile';
+import { hashId, type RateLimiter } from '@salon/security/rate-limit';
+import { clientIp, isSameOrigin } from '@salon/security/request';
+import type { TurnstileResult } from '@salon/security/turnstile';
 
 /**
  * The booking API's request handling, with every dependency passed in so it can be tested without a

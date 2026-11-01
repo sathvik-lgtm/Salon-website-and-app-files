@@ -308,6 +308,52 @@ describe('getAvailableSlots', () => {
     });
   });
 
+  describe('forStaff (the front-desk view)', () => {
+    // 12:03 on the Monday: online customers need 20 minutes' notice (earliest 12:25).
+    const noon = {
+      now: ist(DATE, '12:03'),
+      config: RULES && { ...RULES, minNoticeMin: 20, slotGranularityMin: 5 },
+    };
+    const staffSlots = async (w: MemData, date = DATE) => {
+      const r = await getAvailableSlots(
+        createMemoryPort(w),
+        { branchId: 'b1', serviceIds: ['cut'], date, stylistId: 'ANY' },
+        { ...noon, forStaff: true },
+      );
+      return r.ok ? r.slots.map((s) => s.time) : r.reason;
+    };
+
+    it('offers times from right now, with no minimum notice', async () => {
+      const online = await times(solo(), ['cut'], 'ANY', DATE, noon);
+      const staff = await staffSlots(solo());
+      expect(online[0]).toBe('12:25'); // 12:03 + 20 min, on the 5-minute grid
+      expect(Array.isArray(staff) && staff[0]).toBe('12:00'); // the slot containing 12:03 is still offered
+      expect(staff).toContain('12:05');
+      expect(staff).not.toContain('11:55'); // earlier than now is not
+    });
+
+    it('allows any date from today on, not just the booking window, but not the past', async () => {
+      const far = '2027-03-01'; // a Monday months away: online refuses it
+      expect(await slotsFor(solo(), ['cut'], 'ANY', far, noon)).toEqual({
+        ok: false,
+        reason: 'OUTSIDE_BOOKING_WINDOW',
+      });
+      expect(((await staffSlots(solo(), far)) as string[]).length).toBeGreaterThan(0);
+      expect(await staffSlots(solo(), '2026-11-08')).toBe('OUTSIDE_BOOKING_WINDOW'); // yesterday
+    });
+
+    it('still respects hours, shifts, time off and existing bookings', async () => {
+      const w = solo();
+      book(w, 's1', '12:00', '13:00');
+      w.timeOff.push({ staffId: 's1', startAt: ist(DATE, '15:00'), endAt: ist(DATE, '16:00') });
+      const staff = (await staffSlots(w)) as string[];
+      expect(staff).not.toContain('12:30'); // booked
+      expect(staff).toContain('13:00'); // back-to-back is fine
+      expect(staff).not.toContain('15:30'); // time off
+      expect(staff.at(-1)).toBe('18:00'); // shift ends 19:00
+    });
+  });
+
   it('rejects malformed input', async () => {
     const w = solo();
     expect(await slotsFor(w, ['cut'], 'ANY', '09-11-2026')).toEqual({

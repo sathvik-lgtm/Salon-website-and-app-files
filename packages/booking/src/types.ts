@@ -80,6 +80,12 @@ export interface AppointmentItemSnapshot {
 export interface EngineOptions {
   /** Defaults to the current time. Tests pass a fixed instant. */
   now?: Date;
+  /**
+   * `getAvailableSlots` only: list times the way front-desk staff need them. No minimum notice and
+   * no booking window (any date from today on), and times from the current moment, so a walk-in can
+   * start right now. Customers never get this: the website always uses the online rules.
+   */
+  forStaff?: boolean;
   config?: Partial<import('./config').BookingConfig>;
 }
 

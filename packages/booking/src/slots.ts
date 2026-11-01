@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { listStarts } from './availability';
 import { fail, loadContext, loadDay } from './context';
-import { instantAt, isDateInWindow, parseLocalDate } from './time';
+import { MS_PER_MIN, instantAt, isDateInWindow, localDateOf, parseLocalDate } from './time';
 import type { BookingPort, EngineOptions, Slot, SlotsInput, SlotsResult } from './types';
 
 export const MAX_SERVICES = 8;
@@ -40,19 +40,25 @@ export async function getAvailableSlots(
 
   const day = parseLocalDate(date, context.timezone);
   if (!day) return fail('INVALID_INPUT');
-  if (!isDateInWindow(date, context.now, context.timezone, context.config.windowDays)) {
-    return fail('OUTSIDE_BOOKING_WINDOW');
-  }
+  const forStaff = options.forStaff === true;
+  // Customers: today through the booking window. Staff: any date from today on.
+  const dateOk = forStaff
+    ? date >= localDateOf(context.now, context.timezone)
+    : isDateInWindow(date, context.now, context.timezone, context.config.windowDays);
+  if (!dateOk) return fail('OUTSIDE_BOOKING_WINDOW');
 
-  const { plan, staffDays } = await loadDay(port, context, day, true);
+  const { plan, staffDays } = await loadDay(port, context, day, !forStaff);
   const starts = new Set<number>();
   for (const staff of staffDays) for (const m of listStarts(plan, staff)) starts.add(m);
 
+  // Staff times start from now (the slot that contains this moment is still offered, for a walk-in).
+  const earliestMs = context.now.getTime() - context.config.slotGranularityMin * MS_PER_MIN;
   const slots = [...starts]
     .sort((a, b) => a - b)
     .map<Slot>((m) => {
       const at = instantAt(day, m);
       return { time: at.toFormat('HH:mm'), startAt: at.toJSDate() };
-    });
+    })
+    .filter((slot) => !forStaff || slot.startAt.getTime() > earliestMs);
   return { ok: true, slots };
 }

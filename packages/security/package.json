@@ -1,0 +1,22 @@
+{
+  "name": "@salon/security",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./rate-limit": "./src/rate-limit.ts",
+    "./turnstile": "./src/turnstile.ts",
+    "./request": "./src/request.ts"
+  },
+  "scripts": {
+    "lint": "echo \"lint: n/a yet\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@salon/config": "workspace:*",
+    "@types/node": "22.15.0",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

@@ -13,7 +13,7 @@ import { formatDuration, formatPhone, formatPrice, fullAddress } from '../../lib
 import { formatTime } from '../../lib/hours';
 import { saveReceipt } from '../../lib/receipt';
 import type { BranchView, CategoryView, ServiceView } from '../../lib/types';
-import { TurnstileWidget, type TurnstileHandle } from './TurnstileWidget';
+import { TurnstileWidget, type TurnstileHandle } from '@salon/ui/turnstile';
 import { useJson } from './useJson';
 
 const STEPS = ['Branch', 'Services', 'Stylist', 'Date & time', 'Your details'] as const;

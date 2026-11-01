@@ -41,3 +41,8 @@ export function isDateInWindow(
   // ISO dates sort the same as calendar dates.
   return dateIso >= first! && dateIso <= last!;
 }
+
+/** The branch-local calendar date (`YYYY-MM-DD`) of an instant. */
+export function localDateOf(at: Date, timezone: string): string {
+  return DateTime.fromJSDate(at, { zone: timezone }).toISODate()!;
+}

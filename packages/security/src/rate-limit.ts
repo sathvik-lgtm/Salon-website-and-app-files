@@ -22,6 +22,11 @@ export interface RateLimitResult {
 export interface RateLimiter {
   /** Counts one attempt by `id` in `scope` and says whether it is within `limit` per `windowSec`. */
   hit(scope: string, id: string, limit: number, windowSec: number): Promise<RateLimitResult>;
+  /**
+   * Says whether `id` is already over `limit` in this window WITHOUT counting this check. For
+   * lockouts that count only failures: peek before checking a password, `hit` after a failure.
+   */
+  peek(scope: string, id: string, limit: number, windowSec: number): Promise<RateLimitResult>;
 }
 
 export function createRateLimiter(
@@ -29,20 +34,36 @@ export function createRateLimiter(
   options: { now?: () => number; onError?: (error: unknown) => void } = {},
 ): RateLimiter {
   const now = options.now ?? Date.now;
+
+  /** The current window's counter key, its count so far, and how long the window has left. */
+  async function read(scope: string, id: string, windowSec: number) {
+    const nowSec = Math.floor(now() / 1000);
+    const bucket = Math.floor(nowSec / windowSec);
+    const key = `rl:${scope}:${id}:${bucket}`;
+    const count = Number(await store.get(key)) || 0;
+    return { key, count, retryAfterSec: (bucket + 1) * windowSec - nowSec };
+  }
+
   return {
     async hit(scope, id, limit, windowSec) {
-      const nowSec = Math.floor(now() / 1000);
-      const bucket = Math.floor(nowSec / windowSec);
-      const key = `rl:${scope}:${id}:${bucket}`;
       try {
-        const count = Number(await store.get(key)) || 0;
-        if (count >= limit) {
-          return { allowed: false, retryAfterSec: (bucket + 1) * windowSec - nowSec };
-        }
+        const { key, count, retryAfterSec } = await read(scope, id, windowSec);
+        if (count >= limit) return { allowed: false, retryAfterSec };
         await store.put(key, String(count + 1), Math.max(60, windowSec * 2));
         return { allowed: true, retryAfterSec: 0 };
       } catch (error) {
-        // A broken counter must never stop a real customer from booking: allow, and report it.
+        // A broken counter must never stop a real person: allow, and report it.
+        options.onError?.(error);
+        return { allowed: true, retryAfterSec: 0 };
+      }
+    },
+    async peek(scope, id, limit, windowSec) {
+      try {
+        const { count, retryAfterSec } = await read(scope, id, windowSec);
+        return count >= limit
+          ? { allowed: false, retryAfterSec }
+          : { allowed: true, retryAfterSec: 0 };
+      } catch (error) {
         options.onError?.(error);
         return { allowed: true, retryAfterSec: 0 };
       }
