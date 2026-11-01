@@ -11,6 +11,11 @@ export function branchCookieString(slug: string): string {
   return `${BRANCH_COOKIE}=${encodeURIComponent(slug)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
 }
 
+/** Saves the visitor's branch choice in the browser. Call from event handlers, in the browser only. */
+export function rememberBranch(slug: string): void {
+  document.cookie = branchCookieString(slug);
+}
+
 /** The saved slug from a `document.cookie` / `Cookie` header string, or null. */
 export function readBranchCookie(cookies: string): string | null {
   for (const part of cookies.split(';')) {

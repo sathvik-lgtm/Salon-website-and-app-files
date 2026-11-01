@@ -30,6 +30,7 @@ export interface MemBranchService {
 }
 export interface MemStaff {
   id: string;
+  name?: string;
   homeBranchId: string;
   serviceIds: string[];
   schedules: ScheduleRow[];
@@ -102,7 +103,7 @@ export function createMemoryPort(data: MemData, hooks: { failInsertFor?: string[
             (!staffId || s.id === staffId) &&
             serviceIds.every((id) => s.serviceIds.includes(id)),
         )
-        .map((s) => ({ id: s.id, schedules: s.schedules }));
+        .map((s) => ({ id: s.id, name: s.name ?? `Stylist ${s.id}`, schedules: s.schedules }));
     },
 
     async getTimeOff(staffIds, from, to) {

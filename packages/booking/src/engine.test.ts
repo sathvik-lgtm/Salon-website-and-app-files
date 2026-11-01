@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createAppointment } from './create';
 import { getAvailableSlots } from './slots';
+import { listStylists } from './stylists';
 import { createMemoryPort, type MemData } from './test-support/memory-port';
 import { RULES } from './test-support/rules';
 import { H, allWeekHours, makeWorld, weekly } from './test-support/world';
@@ -578,6 +579,24 @@ describe('createAppointment', () => {
     });
   });
 
+  it('online bookings need a mobile number; staff phone bookings may use a landline', async () => {
+    const landline = '080 2345 6789'; // a valid Bengaluru landline
+    const junk = '1234567890'; // valid only as a landline pattern
+    const port = createMemoryPort(solo());
+    for (const phone of [landline, junk]) {
+      expect(
+        await createAppointment(port, baseInput({ customer: { name: 'A', phone } }), opts),
+      ).toEqual({ ok: false, reason: 'INVALID_PHONE' });
+    }
+    // A staff member taking a booking over the phone can enter whatever number the caller gives.
+    const byStaff = await createAppointment(
+      port,
+      baseInput({ source: 'PHONE', customer: { name: 'A', phone: landline } }),
+      { now: opts.now },
+    );
+    expect(byStaff.ok).toBe(true);
+  });
+
   it('rejects bad phones and malformed input', async () => {
     const port = createMemoryPort(solo());
     expect(
@@ -607,5 +626,56 @@ describe('createAppointment', () => {
       ok: false,
       reason: 'STYLIST_NOT_ELIGIBLE',
     });
+  });
+});
+
+describe('listStylists', () => {
+  const list = (w: MemData, serviceIds: string[], branchId = 'b1') =>
+    listStylists(createMemoryPort(w), { branchId, serviceIds }, opts);
+
+  it('lists the stylists qualified for ALL the chosen services, sorted by name', async () => {
+    const w = makeWorld();
+    w.staff[0]!.name = 'Zoya';
+    w.staff[1]!.name = 'Asha';
+    w.staff[2]!.name = 'Meera';
+    w.staff[2]!.serviceIds = ['cut']; // Meera cannot do colour
+    expect(await list(w, ['cut'])).toEqual({
+      ok: true,
+      stylists: [
+        { id: 's2', name: 'Asha' },
+        { id: 's3', name: 'Meera' },
+        { id: 's1', name: 'Zoya' },
+      ],
+    });
+    expect(await list(w, ['cut', 'colour'])).toEqual({
+      ok: true,
+      stylists: [
+        { id: 's2', name: 'Asha' },
+        { id: 's1', name: 'Zoya' },
+      ],
+    });
+  });
+
+  it('leaves out inactive and non-bookable stylists, and other branches', async () => {
+    const w = makeWorld();
+    w.staff[0]!.active = false;
+    w.staff[1]!.bookable = false;
+    expect(await list(w, ['cut'])).toMatchObject({ ok: true, stylists: [{ id: 's3' }] });
+  });
+
+  it('refuses unknown branches, unavailable services and bad input', async () => {
+    const w = makeWorld();
+    expect(await list(w, ['cut'], 'nope')).toEqual({ ok: false, reason: 'BRANCH_NOT_FOUND' });
+    expect(await list(w, ['missing'])).toEqual({ ok: false, reason: 'SERVICE_UNAVAILABLE' });
+    expect(await list(w, [])).toEqual({ ok: false, reason: 'INVALID_INPUT' });
+  });
+
+  it('a booking result names the stylist who was assigned', async () => {
+    const w = makeWorld();
+    w.staff.forEach((s) => (s.name = `Name of ${s.id}`));
+    const r = await createAppointment(createMemoryPort(w), baseInput({ stylistId: 'ANY' }), opts);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.appointment.staffId).toBe('s1');
+    expect(r.appointment.staffName).toBe('Name of s1');
   });
 });

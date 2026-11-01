@@ -8,6 +8,8 @@ on:
 # engine's concurrency tests need a real Postgres, so both jobs run against a disposable Postgres 17 service
 # (same major version as docker-compose.yml) that is migrated and seeded with placeholder data.
 # SEED_OWNER_* are throwaway values for that disposable database, not real credentials.
+# The Turnstile keys are Cloudflare's published DUMMY test keys (they always pass), so they are not secrets.
+# The `check` job also runs the browser tests (Playwright): they book through the real website.
 
 jobs:
   check:
@@ -28,8 +30,11 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgresql://salon:salon_dev_only@localhost:5432/salon
+      DB_DRIVER: pg
       SEED_OWNER_EMAIL: ci-owner@example.invalid
       SEED_OWNER_PASSWORD: ci-only-throwaway-password
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -45,6 +50,19 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Install the browser for the end-to-end tests
+        run: pnpm --filter @salon/web exec playwright install --with-deps chromium
+      - name: End-to-end tests (real browser, real booking flow)
+        run: pnpm --filter @salon/web e2e
+      - name: Keep the browser-test report if something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7
 
   # Verifies each app fits the Workers Free plan (3 MiB gzipped) using a real OpenNext build.
   cloudflare-size:

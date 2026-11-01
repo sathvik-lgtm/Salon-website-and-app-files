@@ -4,5 +4,9 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // Rate-limit counters for the booking API. Before deploying, create the namespace
+  // (`wrangler kv namespace create RATE_LIMIT`) and replace the id below with the one it prints.
+  // Secrets (set with `wrangler secret put`): DATABASE_URL (Neon pooled string), TURNSTILE_SECRET_KEY.
+  "kv_namespaces": [{ "binding": "RATE_LIMIT", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }]
 }

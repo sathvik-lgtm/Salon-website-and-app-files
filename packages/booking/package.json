@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./config": "./src/config.ts",
     "./prisma": "./src/prisma-port.ts"
   },
   "scripts": {

@@ -1,8 +1,10 @@
 export { bookingConfig, resolveConfig } from './config';
 export type { BookingConfig } from './config';
 export { getAvailableSlots } from './slots';
+export { listStylists } from './stylists';
 export { createAppointment } from './create';
 export { normalizePhone } from './phone';
+export type { PhoneOptions } from './phone';
 export { SlotTakenError } from './types';
 export type {
   AppointmentItemSnapshot,
@@ -24,5 +26,7 @@ export type {
   SlotsInput,
   SlotsResult,
   StaffRecord,
+  StylistOption,
   StylistPreference,
+  StylistsResult,
 } from './types';

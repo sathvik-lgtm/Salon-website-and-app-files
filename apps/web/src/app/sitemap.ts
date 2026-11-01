@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...branches.map((b) => `/branches/${b.slug}`),
     '/services',
     ...catalog.map((c) => `/services/${c.slug}`),
+    '/book',
     '/offers',
     '/privacy',
     '/terms',

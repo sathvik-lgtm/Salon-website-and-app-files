@@ -146,6 +146,7 @@ export function createPrismaPort(db: Db): BookingPort {
         },
         select: {
           id: true,
+          name: true,
           schedules: { select: { weekday: true, startMinute: true, endMinute: true } },
         },
         orderBy: { id: 'asc' },

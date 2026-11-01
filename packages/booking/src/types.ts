@@ -59,6 +59,7 @@ export interface CreatedAppointment {
   customerId: string;
   branchId: string;
   staffId: string;
+  staffName: string;
   startAt: Date;
   endAt: Date;
   totalPricePaise: number;
@@ -110,8 +111,18 @@ export interface ScheduleRow {
 
 export interface StaffRecord {
   id: string;
+  /** Shown to customers when they pick a stylist. */
+  name: string;
   schedules: ScheduleRow[];
 }
+
+/** A stylist a customer can choose for a set of services. */
+export interface StylistOption {
+  id: string;
+  name: string;
+}
+
+export type StylistsResult = { ok: true; stylists: StylistOption[] } | Failure;
 
 /** A stretch of a stylist's time that is taken (time off or an existing appointment). */
 export interface BusyInterval {

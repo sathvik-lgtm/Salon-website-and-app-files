@@ -304,6 +304,7 @@ describe.skipIf(!url)('booking engine on real Postgres', () => {
     expect(row.stylistPreference).toBe('ANY_AVAILABLE');
     expect(row.manageTokenHash).toMatch(/^[0-9a-f]{64}$/);
     expect(row.staffId).toBe(r.appointment.staffId); // resolved stylist recorded
+    expect(r.appointment.staffName).toMatch(new RegExp('^' + tag + ' s[12]$')); // the stylist's real name comes back
     expect(row.items.map((i) => [i.serviceName, i.pricePaise, i.durationMin]).sort()).toEqual([
       ['colour', 400_000, 90],
       ['cut', 60_000, 60],

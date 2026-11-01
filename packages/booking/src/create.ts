@@ -62,7 +62,7 @@ export async function createAppointment(
   const { branchId, serviceIds, stylistId, customer, source, consentAt } = parsed.data;
   const isOnline = source === 'ONLINE';
 
-  const phone = normalizePhone(customer.phone);
+  const phone = normalizePhone(customer.phone, { requireMobile: isOnline });
   if (!phone) return fail('INVALID_PHONE');
 
   const loaded = await loadContext(port, { branchId, serviceIds, stylistId }, options);
@@ -145,6 +145,7 @@ export async function createAppointment(
           customerId: outcome.customerId,
           branchId: context.branchId,
           staffId,
+          staffName: context.candidates.find((c) => c.id === staffId)?.name ?? '',
           startAt,
           endAt,
           totalPricePaise: context.totalPricePaise,
