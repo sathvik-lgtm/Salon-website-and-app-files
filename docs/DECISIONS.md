@@ -18,3 +18,5 @@
 - `create-staff` prints a random one-time password and sets `mustChangePassword` (no password on the CLI, so none in shell history); `--reset` re-issues for an existing account.
 - Password hashing: PBKDF2-SHA256, 100k iterations (workerd cap). CPU cost vs Free 10 ms cap to be measured on a deployed Worker in M5.
 - Docker CLI is not on PATH in some shells: `C:\Users\elect\AppData\Local\Programs\DockerDesktop\resources\bin`.
+- Staff app is served at `<domain>/admin` (option A): separate Worker with Next `basePath: '/admin'`, reached via a Cloudflare route `domain/admin*`; the website Worker serves everything else. Keeps a separate 3 MiB budget per Worker. Tradeoff vs a subdomain: same origin as the public site, so rely on strict CSP + short sessions + session cookie `Path=/admin`.
+- Customers have no accounts or login anywhere; staff accounts only via CLI/OWNER/manager.

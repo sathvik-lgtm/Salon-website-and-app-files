@@ -6,7 +6,7 @@ export const brand = {
   name: 'Placeholder Salon',
   tagline: 'Hair, skin & beauty — placeholder tagline',
   siteUrl: 'https://example.com',
-  staffUrl: 'https://staff.example.com',
+  staffUrl: 'https://example.com/admin',
   defaultTimezone: 'Asia/Kolkata',
   defaultCountry: 'IN',
   currency: 'INR',

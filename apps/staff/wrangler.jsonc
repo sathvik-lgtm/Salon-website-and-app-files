@@ -5,4 +5,6 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  // Production route (add once the domain is on Cloudflare; replace example.com):
+  // "routes": [{ "pattern": "example.com/admin*", "zone_name": "example.com" }]
 }
