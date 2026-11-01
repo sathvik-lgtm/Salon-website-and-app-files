@@ -24,7 +24,7 @@
     "@salon/db": "workspace:*",
     "@salon/security": "workspace:*",
     "@salon/ui": "workspace:*",
-    "@tanstack/react-query": "5.105.1",
+    "@tanstack/react-query": "5.104.4",
     "clsx": "2.1.1",
     "luxon": "3.7.2",
     "next": "16.4.3",

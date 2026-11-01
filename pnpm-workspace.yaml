@@ -8,7 +8,3 @@ allowBuilds:
   unrs-resolver: true
   prisma: true
   "@prisma/engines": true
-
-minimumReleaseAgeExclude:
-  - "@tanstack/query-core@5.105.1"
-  - "@tanstack/react-query@5.105.1"
