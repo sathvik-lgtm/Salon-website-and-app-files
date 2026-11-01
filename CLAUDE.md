@@ -10,6 +10,7 @@ pnpm workspaces + Turborepo · Next.js App Router (TS strict) · Tailwind v4 (to
 ## Commands
 - `pnpm dev` / `build` / `lint` / `typecheck` / `test` (all via turbo)
 - `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:create-staff` — start Postgres first with `docker compose up -d`; copy `packages/db/.env.example` to `.env`
+- `apps/web` pages never query the database: `scripts/snapshot.ts` copies the content into `src/generated/catalog.json` before every dev start, build and typecheck, so those need `DATABASE_URL` (copy `apps/web/.env.example` to `apps/web/.env.local`) and a migrated + seeded Postgres. Content changes need a rebuild + redeploy. Keep `@salon/db` out of web app code (it adds ~2.2 MiB gzipped to the Worker).
 - `pnpm --filter @salon/<app> cf:build` — OpenNext build. **Needs Linux/CI or Windows Developer Mode** (symlink EPERM otherwise).
 
 ## Rules

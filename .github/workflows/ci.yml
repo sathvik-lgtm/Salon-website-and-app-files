@@ -4,10 +4,14 @@ on:
   push:
     branches: [main]
 
+# The website copies its content from the database before it is built or type-checked, and the booking
+# engine's concurrency tests need a real Postgres, so both jobs run against a disposable Postgres 17 service
+# (same major version as docker-compose.yml) that is migrated and seeded with placeholder data.
+# SEED_OWNER_* are throwaway values for that disposable database, not real credentials.
+
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Real Postgres for the booking engine's concurrency tests (same major version as docker-compose.yml).
     services:
       postgres:
         image: postgres:17
@@ -24,6 +28,8 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgresql://salon:salon_dev_only@localhost:5432/salon
+      SEED_OWNER_EMAIL: ci-owner@example.invalid
+      SEED_OWNER_PASSWORD: ci-only-throwaway-password
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -32,9 +38,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Migrate and seed first: the website's typecheck and build copy its content out of the database.
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm db:migrate
       - run: pnpm test
       - run: pnpm build
 
@@ -44,6 +52,24 @@ jobs:
     strategy:
       matrix:
         app: [web, staff]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: salon
+          POSTGRES_PASSWORD: salon_dev_only
+          POSTGRES_DB: salon
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U salon -d salon"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://salon:salon_dev_only@localhost:5432/salon
+      SEED_OWNER_EMAIL: ci-owner@example.invalid
+      SEED_OWNER_PASSWORD: ci-only-throwaway-password
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,6 +78,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - name: OpenNext build
         run: pnpm --filter @salon/${{ matrix.app }} cf:build
       - name: Wrangler dry-run (reports gzip size)

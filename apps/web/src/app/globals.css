@@ -1,9 +1,44 @@
+/* Self-hosted variable fonts (npm packages, no request to Google): one display face, one sans. */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
 @import '@salon/config/theme.css';
 @source '../../../../packages/ui/src';
+
+:root {
+  --font-display-family: 'Fraunces Variable';
+  --font-sans-family: 'Inter Variable';
+}
 
 body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One visible focus style everywhere. Individual components only add offsets. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Motion is a soft fade only, and only for people who have not asked for less. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  .fade-in {
+    animation: fade-in 0.6s ease-out both;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }

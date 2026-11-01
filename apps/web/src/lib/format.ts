@@ -1,0 +1,49 @@
+/** Display helpers. Money is stored as integer paise and shown with Indian digit grouping. */
+
+export function formatPrice(paise: number): string {
+  const whole = paise % 100 === 0;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  }).format(paise / 100);
+}
+
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+}
+
+/** `+919876543210` -> `+91 98765 43210`. Other numbers are shown as stored. */
+export function formatPhone(e164: string): string {
+  const m = /^\+91(\d{5})(\d{5})$/.exec(e164);
+  return m ? `+91 ${m[1]} ${m[2]}` : e164;
+}
+
+/** The address with the city appended, unless the stored address already mentions it. */
+export function fullAddress(address: string, city: string): string {
+  return address.toLowerCase().includes(city.toLowerCase()) ? address : `${address}, ${city}`;
+}
+
+export function telHref(e164: string): string {
+  return `tel:${e164}`;
+}
+
+const PERIOD_LABEL = { MONTHLY: 'month', QUARTERLY: 'quarter', YEARLY: 'year' } as const;
+
+export function formatPeriod(period: keyof typeof PERIOD_LABEL): string {
+  return PERIOD_LABEL[period];
+}
+
+/** "1 Jan 2027" in the salon's timezone, so the date does not shift for a visitor abroad. */
+export function formatDate(iso: string, timezone = 'Asia/Kolkata'): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: timezone,
+  }).format(new Date(iso));
+}

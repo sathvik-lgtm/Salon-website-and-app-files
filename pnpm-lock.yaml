@@ -230,12 +230,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@fontsource-variable/fraunces':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource-variable/inter':
+        specifier: 5.3.0
+        version: 5.3.0
       '@salon/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@salon/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      clsx:
+        specifier: 2.1.1
+        version: 2.1.1
       next:
         specifier: 16.4.3
         version: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@22.15.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -245,6 +254,9 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
     devDependencies:
       '@eslint/eslintrc':
         specifier: 3.3.1
@@ -252,6 +264,9 @@ importers:
       '@opennextjs/cloudflare':
         specifier: 1.20.15
         version: 1.20.15(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@22.15.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(supports-color@10.2.2)(wrangler@4.156.0(@types/node@22.15.0))
+      '@salon/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -264,6 +279,9 @@ importers:
       '@types/react-dom':
         specifier: 19.2.0
         version: 19.2.0(@types/react@19.2.0)
+      dotenv:
+        specifier: 17.2.0
+        version: 17.2.0
       eslint:
         specifier: 9.39.0
         version: 9.39.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -273,9 +291,15 @@ importers:
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
+      tsx:
+        specifier: 4.20.0
+        version: 4.20.0
       typescript:
         specifier: 5.9.3
         version: 5.9.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@22.15.0)(vite@8.3.5(@types/node@22.15.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.36.0)(tsx@4.20.0)(yaml@2.9.1))
       wrangler:
         specifier: 4.156.0
         version: 4.156.0(@types/node@22.15.0)
@@ -1136,6 +1160,12 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@fontsource-variable/fraunces@5.3.0':
+    resolution: {integrity: sha512-9BYGySn4AHEJdgp9Z28tQ3X+laJMEOITXkQarZXeloWQZDq5oOvXJ3kDA8c7MGIfpogIaZfjrQBqmda8POOCKA==}
+
+  '@fontsource-variable/inter@5.3.0':
+    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -4187,6 +4217,9 @@ packages:
     resolution: {integrity: sha512-xRXBn0pPqQTVQiC8wyQrKs2MOlX24zQ0POGaj0kultvoOCstBQM5yvOhAVSUwOMjQtTvsPWoNCHfPGwaaQJhTw==}
     engines: {node: '>= 18'}
 
+  server-only@0.0.1:
+    resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
+
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
     engines: {node: '>= 0.4'}
@@ -5688,6 +5721,10 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
+
+  '@fontsource-variable/fraunces@5.3.0': {}
+
+  '@fontsource-variable/inter@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -8880,6 +8917,8 @@ snapshots:
       send: 1.2.1(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
+
+  server-only@0.0.1: {}
 
   set-function-length@1.2.2:
     dependencies:
