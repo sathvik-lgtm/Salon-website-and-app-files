@@ -32,6 +32,10 @@ export default async function PrivacyPage() {
           One small cookie that remembers the branch you last chose on the services page, so we can
           suggest it when you book. It holds no personal information.
         </li>
+        <li>
+          [Only if page-view counting is switched on:] anonymous counts of how many people visit each
+          page, from Cloudflare Web Analytics. It uses no cookies and does not identify you.
+        </li>
       </ul>
 
       <h2>Why we collect it</h2>

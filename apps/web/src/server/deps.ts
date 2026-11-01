@@ -11,22 +11,29 @@ import { verifyTurnstile } from '@salon/security/turnstile';
 const memoryStore = createMemoryStore();
 let warnedAboutMemory = false;
 
+// Local development and CI run one long-lived Node server on plain `pg`, so they share one client
+// (building a Prisma client costs far more than a query). Workers must not: a connection cannot be
+// kept across requests there, so each request builds and closes its own.
+let sharedLocalDb: Db | undefined;
+
 const log: ApiDeps['log'] = (event, data) => console.log(JSON.stringify({ event, ...data }));
 
 /**
  * Builds the real dependencies for one request, runs `run`, and always closes the database
- * connection afterwards. The database client is created lazily, so a request that is refused early
+ * connection afterwards (except the shared local one). The database client is created lazily, so a request that is refused early
  * (wrong origin, rate limited, bad input) never opens a connection.
  */
 export async function withApiDeps<T>(run: (deps: ApiDeps) => Promise<T>): Promise<T> {
   let db: Db | undefined;
-  const port = () => {
+  const database = (): Db => {
     const url = getEnv('DATABASE_URL');
     if (!url) throw new Error('DATABASE_URL is not set');
     // Workers use the Neon driver; local development and CI use plain `pg`.
-    db ??= createDb(url, getEnv('DB_DRIVER') === 'pg' ? 'pg' : 'neon');
-    return createPrismaPort(db);
+    if (getEnv('DB_DRIVER') === 'pg') db ??= sharedLocalDb ??= createDb(url, 'pg');
+    else db ??= createDb(url, 'neon');
+    return db;
   };
+  const port = () => createPrismaPort(database());
 
   const kv = getKv('RATE_LIMIT');
   if (!kv && !warnedAboutMemory) {
@@ -48,6 +55,9 @@ export async function withApiDeps<T>(run: (deps: ApiDeps) => Promise<T>): Promis
       onError: (error) =>
         log('rate_limit_store_error', { type: error instanceof Error ? error.name : 'unknown' }),
     }),
+    pingDatabase: async () => {
+      await database().$queryRaw`SELECT 1`;
+    },
     verifyTurnstile: (token, ip) =>
       verifyTurnstile({ token, ip, secret: getEnv('TURNSTILE_SECRET_KEY') }),
     now: () => new Date(),
@@ -57,6 +67,6 @@ export async function withApiDeps<T>(run: (deps: ApiDeps) => Promise<T>): Promis
   try {
     return await run(deps);
   } finally {
-    await db?.$disconnect();
+    if (db !== sharedLocalDb) await db?.$disconnect();
   }
 }

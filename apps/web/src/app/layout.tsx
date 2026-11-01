@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { brand } from '@salon/config/brand';
 import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
@@ -12,6 +13,10 @@ export const metadata: Metadata = {
   description: brand.tagline,
   openGraph: { siteName: brand.name, type: 'website', locale: 'en_IN' },
 };
+
+// Cloudflare Web Analytics: privacy-friendly page-view counts (no cookies, no personal data). Off until
+// the owner creates the site in Cloudflare and sets this token at build time (docs/DEPLOYMENT.md).
+const analyticsToken = process.env.NEXT_PUBLIC_CF_BEACON_TOKEN;
 
 export const viewport: Viewport = { themeColor: '#fbfaf8' };
 
@@ -33,6 +38,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </main>
         <SiteFooter branches={branches} />
         <StickyBookBar />
+        {analyticsToken ? (
+          <Script
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={JSON.stringify({ token: analyticsToken })}
+          />
+        ) : null}
       </body>
     </html>
   );

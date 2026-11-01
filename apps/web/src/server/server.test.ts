@@ -3,6 +3,7 @@ import {
   LIMITS,
   handleAvailability,
   handleCreateBooking,
+  handleHealth,
   handleStylists,
   type ApiDeps,
 } from './booking-api';
@@ -48,6 +49,7 @@ function makeDeps(overrides: Partial<ApiDeps['engine']> = {}, clock = { ms: NOW.
   const deps = {
     engine,
     rateLimiter: createRateLimiter(store, { now: () => clock.ms }),
+    pingDatabase: vi.fn(async () => {}),
     verifyTurnstile: vi.fn(async () => ({ ok: true as const })) as ApiDeps['verifyTurnstile'] &
       ReturnType<typeof vi.fn>,
     now: () => NOW,
@@ -443,5 +445,43 @@ describe('GET /api/availability and /api/stylists', () => {
     expect(res.status).toBe(429);
     expect(res.headers.get('retry-after')).toBeTruthy();
     expect(LIMITS.readPerIp.limit).toBeGreaterThan(LIMITS.createPerIp.limit * 5);
+  });
+});
+
+describe('GET /api/health', () => {
+  const get = (query = '', ip = '10.0.0.1') =>
+    new Request(`https://${HOST}/api/health${query}`, { headers: { host: HOST, 'x-forwarded-for': ip } });
+
+  it('says the site is up without touching the database', async () => {
+    const { deps } = makeDeps();
+    const res = await handleHealth(get(), deps);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(deps.pingDatabase).not.toHaveBeenCalled();
+  });
+
+  it('checks the database only when asked (?db=1)', async () => {
+    const { deps } = makeDeps();
+    const res = await handleHealth(get('?db=1'), deps);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, db: true });
+    expect(deps.pingDatabase).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers 503 with no details when the database is down', async () => {
+    const { deps } = makeDeps();
+    deps.pingDatabase.mockRejectedValueOnce(new Error('connect ECONNREFUSED postgres://user:secret@host/db'));
+    const res = await handleHealth(get('?db=1'), deps);
+    expect(res.status).toBe(503);
+    const text = await res.text();
+    expect(text).not.toContain('secret');
+    expect(text).not.toContain('ECONNREFUSED');
+    expect(JSON.stringify(deps.log.mock.calls)).not.toContain('secret');
+  });
+
+  it('limits how often one address can run the database check', async () => {
+    const { deps } = makeDeps();
+    for (let i = 0; i < LIMITS.readPerIp.limit; i++) await handleHealth(get('?db=1'), deps);
+    expect((await handleHealth(get('?db=1'), deps)).status).toBe(429);
   });
 });

@@ -12,3 +12,8 @@ dist
 playwright-report
 test-results
 **/src/generated
+
+# Database exports hold customer details: never commit them.
+backups/
+*.dump
+*.dump.enc

@@ -7,7 +7,9 @@
     "./rate-limit": "./src/rate-limit.ts",
     "./turnstile": "./src/turnstile.ts",
     "./request": "./src/request.ts",
-    "./env": "./src/env.ts"
+    "./env": "./src/env.ts",
+    "./headers": "./src/headers.ts",
+    "./error-report": "./src/error-report.ts"
   },
   "scripts": {
     "lint": "echo \"lint: n/a yet\"",

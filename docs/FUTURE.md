@@ -22,3 +22,8 @@
 - Staff app: read-only offline copy of today's schedule with an "offline" banner (the brief's PWA stretch goal; needs a service worker).
 - Staff app: when the real deploy exists, verify Auth.js on Workers (cookie, `AUTH_SECRET` from secrets, `AUTH_URL`), PBKDF2's CPU time per sign-in, and that the 4.6 MiB gzipped Worker starts within 1 second.
 - Shared formatting: extract the date and money helpers duplicated between the website and the staff app into one package if they start to drift.
+- Browser-side error reporting (Sentry browser SDK or a small `window.onerror` reporter) with the same PII scrubbing; needs a CSP `connect-src` entry.
+- Security headers: switch the staff app (fully dynamic) to per-request CSP nonces once Node-runtime middleware is proven on OpenNext; add a lint rule limiting `dangerouslySetInnerHTML` to `JsonLd.tsx`.
+- Verify on the first real deploy: security headers present on prerendered pages (`headers()` through OpenNext), `instrumentation.ts` `onRequestError` running on Workers and reaching Sentry, the `Deploy website` workflow, the `Database backup` workflow with real R2 credentials, and `/api/health?db=1` against Neon.
+- Performance: availability still costs about 8 ms of CPU per request (Luxon zone offsets); a pure-arithmetic path for fixed-offset zones such as Asia/Kolkata would cut it further if Workers CPU cost ever matters.
+- Load testing the deployed site needs a way past Turnstile and the rate limits (a separate rehearsal Worker with Turnstile's test keys and a Neon branch); do not add a bypass to the production code.

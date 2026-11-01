@@ -87,6 +87,15 @@ async function main() {
   const ownerEmail = process.env.SEED_OWNER_EMAIL?.trim().toLowerCase();
   const ownerPassword = process.env.SEED_OWNER_PASSWORD;
   if (!url) throw new Error('DATABASE_URL is not set');
+  // This loads placeholder branches, prices and staff accounts: it must never reach a real database by accident.
+  const host = new URL(url).hostname;
+  if (!['localhost', '127.0.0.1', 'host.docker.internal'].includes(host) && process.env.ALLOW_PLACEHOLDER_SEED !== 'yes') {
+    throw new Error(
+      `Refusing to load PLACEHOLDER data into ${host}: it is not a local database. ` +
+        'For a real database enter your real branches and services instead (docs/DEPLOYMENT.md). ' +
+        'To force this anyway (a rehearsal database), set ALLOW_PLACEHOLDER_SEED=yes.',
+    );
+  }
   if (!ownerEmail || !ownerPassword) throw new Error('SEED_OWNER_EMAIL and SEED_OWNER_PASSWORD must be set');
 
   const db = createDb(url, 'pg');

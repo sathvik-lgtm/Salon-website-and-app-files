@@ -26,7 +26,9 @@ export function AppointmentCard({
   return (
     <Link
       href={`/bookings/${a.id}`}
-      aria-label={appointmentLabel(a, timezone)}
+      // No aria-label: everything is already visible text (time, status, name, services, stylist), and a
+      // label that words it differently fails WCAG "label in name" (a screen reader user and a sighted user
+      // would otherwise get different words).
       className={clsx(
         'block rounded-lg p-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         STATUS_STYLE[a.status],

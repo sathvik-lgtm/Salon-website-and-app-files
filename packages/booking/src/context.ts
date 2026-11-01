@@ -37,11 +37,18 @@ export async function loadContext(
   input: { branchId: string; serviceIds: string[]; stylistId: string },
   options: EngineOptions,
 ): Promise<{ ok: true; context: BookingContext } | Failure> {
-  const branch = await port.getBranch(input.branchId);
+  const specific = input.stylistId !== 'ANY';
+  // The three lookups do not depend on each other, so they run together: one database round trip
+  // instead of three (on Neon each round trip is a network hop). The checks below still run in the
+  // same order, so the first failing one is reported exactly as before.
+  const [branch, offered, candidates] = await Promise.all([
+    port.getBranch(input.branchId),
+    port.getServices(input.branchId, input.serviceIds),
+    port.getCandidateStaff(input.branchId, input.serviceIds, specific ? input.stylistId : undefined),
+  ]);
   if (!branch || !branch.active) return fail('BRANCH_NOT_FOUND');
   assertZone(branch.timezone);
 
-  const offered = await port.getServices(input.branchId, input.serviceIds);
   const byId = new Map(offered.map((s) => [s.id, s]));
   const services: ServiceRecord[] = [];
   for (const id of input.serviceIds) {
@@ -50,12 +57,6 @@ export async function loadContext(
     services.push(service);
   }
 
-  const specific = input.stylistId !== 'ANY';
-  const candidates = await port.getCandidateStaff(
-    input.branchId,
-    input.serviceIds,
-    specific ? input.stylistId : undefined,
-  );
   if (specific && candidates.length === 0) return fail('STYLIST_NOT_ELIGIBLE');
 
   return {

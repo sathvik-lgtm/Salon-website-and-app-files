@@ -329,6 +329,14 @@ test.describe('accessibility of every staff screen', () => {
     );
     await page.getByRole('radio', { name: 'week' }).check({ force: true });
     await expect(page.getByRole('heading', { name: /Week of/ })).toBeVisible();
+    // The audit must see a real booking card, not just an empty week: the booking is a few days ahead,
+    // so depending on the day the tests run it can be in next week.
+    const card = page.getByRole('link', { name: /Accessible Customer/ });
+    const inThisWeek = await card
+      .waitFor({ state: 'visible', timeout: 4000 })
+      .then(() => true, () => false); // the week's bookings load a moment after its heading
+    if (!inThisWeek) await page.getByRole('button', { name: 'Next week' }).click();
+    await expect(card).toBeVisible();
     await expectNoAxeViolations(page, `Calendar week (${label})`);
     if (viewport.width < 500) await noScroll(`Calendar week (${label})`);
     await check(

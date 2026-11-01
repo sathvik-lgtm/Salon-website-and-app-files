@@ -1,0 +1,60 @@
+name: Deploy website
+
+# Rebuilds and deploys the PUBLIC WEBSITE to Cloudflare. It runs every night (so a promotion whose end
+# date has passed drops off the pages) and whenever you press "Run workflow" (after changing prices,
+# services or promotions in the database). Nothing else deploys automatically: the staff app is
+# deployed by hand (docs/DEPLOYMENT.md). It does nothing until the secrets below exist.
+#
+# NOT YET TRIED against a real Cloudflare account: expect to adjust it during the first real deploy.
+#
+# Repository secrets:
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID   a token allowed to edit Workers (and KV)
+#   DEPLOY_DATABASE_URL                           Neon DIRECT connection string (the build copies the website content out of it)
+#   NEXT_PUBLIC_TURNSTILE_SITE_KEY                the real Turnstile site key (public by design, but it is baked into the page at build time)
+# Optional repository variable: NEXT_PUBLIC_CF_BEACON_TOKEN (Cloudflare Web Analytics)
+
+on:
+  schedule:
+    - cron: '30 20 * * *' # 02:00 in India
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DATABASE_URL: ${{ secrets.DEPLOY_DATABASE_URL }}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+      NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.NEXT_PUBLIC_CF_BEACON_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the deploy secrets exist
+        id: secrets
+        run: |
+          missing=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DATABASE_URL NEXT_PUBLIC_TURNSTILE_SITE_KEY; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice::Deploys are not set up yet (missing:$missing). Nothing was deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.secrets.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.secrets.outputs.ready == 'true'
+      - name: Build and deploy the website
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm --filter @salon/web cf:deploy

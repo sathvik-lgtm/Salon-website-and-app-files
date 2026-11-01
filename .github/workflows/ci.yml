@@ -59,6 +59,13 @@ jobs:
         run: pnpm --filter @salon/web e2e
       - name: End-to-end tests - staff app (book on the website, see it in the staff app, roles, sign-in)
         run: pnpm --filter @salon/staff e2e
+      - name: Load test and Lighthouse (production build of the website)
+        run: |
+          pnpm --filter @salon/web start &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
+          # A shared CI machine is slower and noisier than a laptop: looser speed limit, same correctness checks.
+          LOAD_SECONDS=5 LOAD_MAX_P99_MS=1500 pnpm --filter @salon/web load-test
+          pnpm --filter @salon/web lighthouse
       - name: Keep the browser-test report if something failed
         if: failure()
         uses: actions/upload-artifact@v4

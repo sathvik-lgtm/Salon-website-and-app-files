@@ -14,6 +14,7 @@ pnpm workspaces + Turborepo · Next.js App Router (TS strict) · Tailwind v4 (to
 - `pnpm db:create-staff -- --email a@b.in --name "Name" --role RECEPTIONIST --branch branch-one` creates a staff account and prints a one-time password (add `--reset` with just `--email` to reset one). `apps/staff/.env.local` (copy `.env.example`) needs `AUTH_SECRET` and `AUTH_URL`.
 - `pnpm --filter @salon/staff e2e` — Playwright tests of the staff app (start both apps, need `pnpm build`, seeded Postgres, internet for Turnstile test verification).
 - `pnpm --filter @salon/web e2e` — Playwright browser tests (needs `pnpm build` first, a seeded local Postgres, and internet for Turnstile's test verification). `bash scripts/cf-size-docker.sh web` measures the real Cloudflare bundle size via Docker.
+- `pnpm --filter @salon/web load-test` (against `pnpm start`: many people booking one slot, reads under load) and `pnpm --filter @salon/web lighthouse` (phone Lighthouse on every public page, floor 90); both run in CI. `bash scripts/backup.sh --verify` exports, encrypts and proves a restore (needs Docker). Deployment, security and launch docs: `docs/DEPLOYMENT.md`, `docs/SECURITY.md`, `docs/LAUNCH-CHECKLIST.md`.
 - `pnpm --filter @salon/<app> cf:build` — OpenNext build. **Needs Linux/CI or Windows Developer Mode** (symlink EPERM otherwise).
 
 ## Rules
@@ -25,5 +26,6 @@ pnpm workspaces + Turborepo · Next.js App Router (TS strict) · Tailwind v4 (to
 - No double-booking: enforced by a Postgres `EXCLUDE USING gist` constraint (all statuses except CANCELLED, NO_SHOW); SQLSTATE `23P01` = slot taken.
 - Migrations run only from `packages/db`, never on app start.
 - Never commit secrets; `.env.example` only. Seed data is placeholder.
+- Headers/CSP live in `packages/security/src/headers.ts` (used by both apps' `next.config.ts`); a new third-party origin must be added there deliberately (and to the header tests). Error reports go through `packages/security/src/error-report.ts` and must stay PII-free.
 - Security: Zod on every input, Turnstile + KV rate limits on booking/login, server-side role+branch scoping on every staff query, no PII in logs/Sentry.
 - Out of scope for v0: notifications (WhatsApp/SMS/email), payments, POS, waitlist, recurring, reviews, analytics dashboard, customer accounts, manage/cancel page, client-notes UI (`Customer.notes` must not be read), admin CRUD screens. Put ideas in `docs/FUTURE.md`.

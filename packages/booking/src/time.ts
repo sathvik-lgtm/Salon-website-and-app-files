@@ -19,6 +19,20 @@ export function parseLocalDate(date: string, timezone: string): DateTime | null 
  * 1440 (end of day) means the next local midnight.
  */
 export function instantAt(day: DateTime, minute: number): DateTime {
+  let byMinute = instantCache.get(day);
+  if (!byMinute) instantCache.set(day, (byMinute = new Map()));
+  let at = byMinute.get(minute);
+  if (!at) byMinute.set(minute, (at = computeInstantAt(day, minute)));
+  return at;
+}
+
+// Working out a wall-clock time in a named zone is slow (Luxon asks Intl for the zone's offset), and
+// one availability request asks for the same few hundred times over and over (every stylist, every
+// start, every opening-hours check). DateTime values never change, so the answers are kept for as
+// long as the `day` object they were asked about lives (one request).
+const instantCache = new WeakMap<DateTime, Map<number, DateTime>>();
+
+function computeInstantAt(day: DateTime, minute: number): DateTime {
   if (minute >= 1440) return day.plus({ days: 1 }).startOf('day');
   return day.set({ hour: Math.floor(minute / 60), minute: minute % 60, second: 0, millisecond: 0 });
 }

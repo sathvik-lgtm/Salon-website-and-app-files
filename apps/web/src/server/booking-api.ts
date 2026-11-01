@@ -30,6 +30,8 @@ export interface ApiDeps {
     normalizePhone(phone: string): string | null;
   };
   rateLimiter: RateLimiter;
+  /** Runs the cheapest possible query; throws if the database cannot be reached. */
+  pingDatabase(): Promise<void>;
   verifyTurnstile(token: string, ip: string): Promise<TurnstileResult>;
   now(): Date;
   /** Structured log line. Must never be given a name, phone number or other personal data. */
@@ -70,6 +72,32 @@ const fail = (code: string, status: number, headers?: Record<string, string>) =>
 
 const tooMany = (retryAfterSec: number) =>
   fail('RATE_LIMITED', 429, { 'Retry-After': String(Math.max(1, retryAfterSec)) });
+
+// ---------- health ----------
+
+/**
+ * `GET /api/health` answers "is the site up?" without touching the database. `?db=1` also checks that the
+ * database answers. For uptime monitors: use the plain one often, and the `db=1` one rarely (on Neon's
+ * free plan a check that reaches the database keeps it awake all day and uses up the monthly allowance).
+ * Nothing about the failure is shown to the caller; it is logged without details.
+ */
+export async function handleHealth(request: Request, deps: ApiDeps): Promise<Response> {
+  if (new URL(request.url).searchParams.get('db') !== '1') return json({ ok: true });
+  const limit = await deps.rateLimiter.hit(
+    'read',
+    await hashId(clientIp(request)),
+    LIMITS.readPerIp.limit,
+    LIMITS.readPerIp.windowSec,
+  );
+  if (!limit.allowed) return tooMany(limit.retryAfterSec);
+  try {
+    await deps.pingDatabase();
+    return json({ ok: true, db: true });
+  } catch (error) {
+    deps.log('health_db_error', { type: error instanceof Error ? error.name : 'unknown' });
+    return fail('DATABASE_UNAVAILABLE', 503);
+  }
+}
 
 // ---------- reads ----------
 

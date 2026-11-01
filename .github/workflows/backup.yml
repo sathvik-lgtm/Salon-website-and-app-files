@@ -1,0 +1,54 @@
+name: Database backup
+
+# A daily encrypted export of the database, proven restorable, then stored in a private Cloudflare R2
+# bucket. It sits next to Neon's own point-in-time restore (docs/DEPLOYMENT.md, "Backups"). It does
+# nothing until the secrets below exist, so it is safe to leave in place before launch.
+#
+# Repository secrets:
+#   BACKUP_DATABASE_URL    Neon's DIRECT connection string (not the pooled one)
+#   BACKUP_PASSPHRASE      a long random passphrase; keep a copy somewhere safe, without it the backups cannot be opened
+#   R2_ACCOUNT_ID, R2_BACKUP_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+#
+# The file holds customer names and phone numbers, so it is never attached to the run as an artifact
+# (artifacts of a public repository are public). Add an R2 lifecycle rule to delete files after 30 days.
+
+on:
+  schedule:
+    - cron: '17 21 * * *' # 02:47 in India, when the salons are closed
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the backup secrets exist
+        id: secrets
+        run: |
+          missing=""
+          for name in BACKUP_DATABASE_URL BACKUP_PASSPHRASE R2_ACCOUNT_ID R2_BACKUP_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice::Backups are not set up yet (missing:$missing). Nothing was backed up."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Export, encrypt and prove the backup restores
+        if: steps.secrets.outputs.ready == 'true'
+        run: bash scripts/backup.sh --verify
+      - name: Upload to R2
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          file="$(ls backups/*.enc)"
+          aws s3 cp "$file" "s3://$R2_BACKUP_BUCKET/$(basename "$file")" \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"

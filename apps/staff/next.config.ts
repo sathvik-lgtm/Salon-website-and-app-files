@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import { securityHeaders } from '@salon/security/headers';
+
+const development = process.env.NODE_ENV !== 'production';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@salon/ui', '@salon/config', '@salon/db', '@salon/booking', '@salon/security'],
@@ -7,6 +10,15 @@ const nextConfig: NextConfig = {
   basePath: '/admin',
   async headers() {
     return [
+      {
+        // Only the sign-in page loads Turnstile, so only it may talk to Cloudflare's challenge host.
+        source: '/login',
+        headers: securityHeaders({ development, turnstile: true }),
+      },
+      {
+        source: '/((?!login$|_next/static|_next/image|icons/).*)',
+        headers: securityHeaders({ development }),
+      },
       {
         // Every page and API response: never indexed, and never kept by a browser or proxy cache,
         // because they show private bookings and customer details. (Static files keep their own caching.)
